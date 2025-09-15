@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ibu Nyaman</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f7;
+            color: #333;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4">
+
+    <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-6 md:p-10 my-8">
+
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-pink-600 mb-2">Ibu Nyaman</h1>
+            <p class="text-gray-500 md:text-lg">Panduan untuk menghadapi ketidaknyamanan selama kehamilan</p>
+        </header>
+
+        <!-- Search Bar -->
+        <div class="mb-8">
+            <input type="text" id="searchInput" placeholder="Cari ketidaknyamanan (mis. mual, sakit punggung)..." class="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-400 transition-colors duration-200">
+        </div>
+
+        <!-- Content Area -->
+        <main id="contentArea">
+            <div id="noResults" class="hidden text-center text-gray-500 mt-10">
+                <p>Tidak ada hasil yang ditemukan untuk pencarian Anda.</p>
+            </div>
+            <!-- Dynamic cards will be inserted here -->
+        </main>
+
+    </div>
+
+    <!-- Modal for details -->
+    <div id="detailModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-2xl p-6 md:p-8 w-full max-w-2xl transform transition-transform duration-300 scale-95 md:scale-100">
+            <button id="closeModal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+            <h2 id="modalTitle" class="text-2xl md:text-3xl font-bold text-pink-600 mb-4"></h2>
+            <div class="text-gray-700 space-y-4">
+                <h3 class="text-lg font-semibold text-pink-500">Penyebab</h3>
+                <p id="modalCause"></p>
+                <h3 class="text-lg font-semibold text-pink-500">Cara Mengatasi</h3>
+                <p id="modalSolution"></p>
+                <h3 class="text-lg font-semibold text-pink-500">Kenormalan</h3>
+                <p id="modalNormality"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data for the app
+        const discomfortData = [
+            {
+                name: "Mual & Muntah (Morning Sickness)",
+                keywords: ["mual", "muntah", "morning sickness"],
+                cause: "Fluktuasi hormon, terutama human chorionic gonadotropin (hCG), dan peningkatan sensitivitas terhadap bau.",
+                solution: "Makan dalam porsi kecil tapi sering, hindari makanan berbau kuat atau berminyak, konsumsi biskuit atau roti kering di pagi hari sebelum beranjak dari tempat tidur.",
+                normality: "Sangat umum terjadi pada trimester pertama. Biasanya mereda setelah trimester pertama. Jika muntah parah dan menyebabkan dehidrasi, segera konsultasikan dengan dokter."
+            },
+            {
+                name: "Sakit Punggung",
+                keywords: ["sakit punggung", "punggung", "nyeri punggung"],
+                cause: "Peningkatan berat badan dan perubahan pusat gravitasi tubuh, serta hormon relaksin yang melonggarkan sendi dan ligamen di panggul.",
+                solution: "Jaga postur tubuh yang baik, hindari mengangkat beban berat, gunakan sepatu datar, dan lakukan peregangan ringan atau prenatal yoga. Kompres hangat juga bisa membantu.",
+                normality: "Umum terjadi, terutama di trimester kedua dan ketiga. Dapat diatasi dengan penyesuaian gaya hidup."
+            },
+            {
+                name: "Kelelahan",
+                keywords: ["kelelahan", "lemas", "ngantuk"],
+                cause: "Peningkatan kadar hormon, peningkatan volume darah, dan tuntutan energi yang lebih besar untuk mendukung pertumbuhan janin.",
+                solution: "Dengarkan tubuh Anda dan istirahat yang cukup. Tidur siang jika memungkinkan, dan minta bantuan pasangan atau keluarga untuk tugas-tugas rumah.",
+                normality: "Sangat normal, terutama pada awal dan akhir kehamilan. Ini adalah sinyal dari tubuh untuk memperlambat aktivitas."
+            },
+            {
+                name: "Sering Buang Air Kecil",
+                keywords: ["buang air kecil", "pipis", "kencing"],
+                cause: "Peningkatan volume darah dan tekanan rahim yang membesar pada kandung kemih.",
+                solution: "Minum cukup air di siang hari, tapi kurangi di malam hari. Pastikan Anda benar-benar mengosongkan kandung kemih saat buang air kecil.",
+                normality: "Normal dan akan terjadi selama kehamilan. Penting untuk tidak mengurangi asupan cairan."
+            },
+            {
+                name: "Heartburn (Sensasi Panas di Dada)",
+                keywords: ["heartburn", "panas dada", "asam lambung"],
+                cause: "Hormon kehamilan melemaskan katup antara kerongkongan dan perut, memungkinkan asam lambung naik. Tekanan dari rahim yang membesar juga berkontribusi.",
+                solution: "Makan dalam porsi kecil, hindari makanan pedas, berminyak, atau asam. Jangan berbaring setelah makan, dan tidur dengan posisi kepala sedikit lebih tinggi.",
+                normality: "Sangat umum dan dapat terjadi kapan saja selama kehamilan."
+            }
+        ];
+
+        const contentArea = document.getElementById('contentArea');
+        const searchInput = document.getElementById('searchInput');
+        const detailModal = document.getElementById('detailModal');
+        const closeModalBtn = document.getElementById('closeModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalCause = document.getElementById('modalCause');
+        const modalSolution = document.getElementById('modalSolution');
+        const modalNormality = document.getElementById('modalNormality');
+        const noResults = document.getElementById('noResults');
+
+        // Function to create discomfort cards
+        function createCards(data) {
+            contentArea.innerHTML = '';
+            if (data.length === 0) {
+                noResults.classList.remove('hidden');
+                return;
+            } else {
+                noResults.classList.add('hidden');
+            }
+            data.forEach(item => {
+                const card = document.createElement('div');
+                card.classList.add('bg-pink-50', 'rounded-xl', 'p-6', 'shadow-md', 'mb-6', 'cursor-pointer', 'transition-all', 'duration-300', 'hover:shadow-lg', 'hover:scale-[1.01]');
+                card.innerHTML = `
+                    <h2 class="text-xl font-semibold text-pink-700">${item.name}</h2>
+                    <p class="mt-2 text-gray-600 line-clamp-2">${item.cause}</p>
+                `;
+                card.addEventListener('click', () => showDetails(item));
+                contentArea.appendChild(card);
+            });
+        }
+
+        // Function to show modal with details
+        function showDetails(item) {
+            modalTitle.textContent = item.name;
+            modalCause.textContent = item.cause;
+            modalSolution.textContent = item.solution;
+            modalNormality.textContent = item.normality;
+            detailModal.classList.remove('hidden');
+        }
+
+        // Function to close modal
+        function closeModal() {
+            detailModal.classList.add('hidden');
+        }
+
+        // Event listeners
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filteredData = discomfortData.filter(item =>
+                item.name.toLowerCase().includes(searchTerm) ||
+                item.keywords.some(keyword => keyword.includes(searchTerm))
+            );
+            createCards(filteredData);
+        });
+
+        closeModalBtn.addEventListener('click', closeModal);
+        detailModal.addEventListener('click', (e) => {
+            if (e.target === detailModal) {
+                closeModal();
+            }
+        });
+
+        // Initial rendering of cards
+        window.onload = () => createCards(discomfortData);
+    </script>
+</body>
+</html>
